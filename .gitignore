@@ -1,0 +1,12 @@
+input/.directory
+input/*.csv
+output/*.csv
+output/*.png
+output/*.html
+*.docx
+*.pdf
+*.doc
+.DS_STORE
+.Rproj.user
+*.Rproj
+.Rhistory

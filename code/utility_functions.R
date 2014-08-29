@@ -99,16 +99,16 @@ getbaseline <- function(baselinedate,visitdate,id,value=value,before=30,after=30
     if(!missing(value)) {
         if(returndate){
             baselinevalues <- data.frame(ids,vdate,values)[keep1==diff & !is.na(values),]
-            names(baselinevalues) <- c(deparse(substitute(id)),paste(deparse(substitute(value)),"_d",sep=""),deparse(substitute(value)))
+            names(baselinevalues) <- c(deparse(substitute(id)),paste0(deparse(substitute(value)),"_cmp_d"),paste0(deparse(substitute(value)),"_cmp"))
         }
         if(!returndate){
             baselinevalues <- data.frame(ids,values)[keep1==diff & !is.na(values),]
-            names(baselinevalues) <- c(deparse(substitute(id)),deparse(substitute(value)))
+            names(baselinevalues) <- c(deparse(substitute(id)),paste0(deparse(substitute(value)),"_cmp"))
         }
     }
     if(missing(value)) {
         baselinevalues <- data.frame(ids,vdate)[keep1==diff,]
-        names(baselinevalues) <- c(deparse(substitute(id)),deparse(substitute(visitdate)))
+        names(baselinevalues) <- c(deparse(substitute(id)),paste0(deparse(substitute(visitdate)),"_cmp"))
     }
     return(baselinevalues)
 }
@@ -138,7 +138,7 @@ getselectdate <- function(date,id,type="first",data=data,dateformat=dateformat){
     if(type=="first") keep1 <- unsplit(lapply(split(dates, ids), FUN=function(x) min(x)), ids)
     if(type=="last") keep1 <- unsplit(lapply(split(dates, ids), FUN=function(x) max(x)), ids)
     selectdate <- unique(data.frame(ids,keep1))
-    names(selectdate) <- c(deparse(substitute(id)),deparse(substitute(date)))
+    names(selectdate) <- c(deparse(substitute(id)),paste(deparse(substitute(date)),type,"cmp",sep="_"))
     return(selectdate)
 }
 
@@ -167,23 +167,64 @@ getnadirvalue <- function(value,id,date=date,data=data,returndate=TRUE,dateforma
         dates <- as.Date(dates,dateformat)
     }
     keep1 <- unsplit(lapply(split(values, ids), FUN=function(x) min(x)), ids)
-    if(missing(date)){
-        nadirvalue <- unique(data.frame(ids,keep1))
-        names(nadirvalue) <- c(deparse(substitute(id)),deparse(substitute(value)))
-    }
     if(!missing(date)){
       if(returndate){
           nadirvalue <- data.frame(ids,keep1,dates)[keep1==values,]
 	        nadirvalue <- nadirvalue[!duplicated(nadirvalue$ids),]
-          names(nadirvalue) <- c(deparse(substitute(id)),deparse(substitute(value)),deparse(substitute(date)))
+          names(nadirvalue) <- c(deparse(substitute(id)),paste(deparse(substitute(value)),"_nadir_cmp"),paste0(deparse(substitute(date)),"_nadir_cmp_d"))
       }
-      if(returndate){
+      if(!returndate | missing(date)){
         nadirvalue <- data.frame(ids,keep1)[keep1==values,]
         nadirvalue <- nadirvalue[!duplicated(nadirvalue$ids),]
-        names(nadirvalue) <- c(deparse(substitute(id)),deparse(substitute(value)))
+        names(nadirvalue) <- c(deparse(substitute(id)),paste0(deparse(substitute(value)),"_nadir"))
       }      
     }
     return(nadirvalue)
 }
 
 
+#' getselectdate
+#'
+#' summary this fuction allowes the user to get the vlue of any variable which appears first, late, or most often within a unique ID
+#'
+#' details
+#'
+#' @param var one or more variables per subject that will be distilled to one based on type.. 
+#' @param id contains or indicates the unique id per subject
+#' @param date one or more dates per subject that is mandatory if type is "first" or "last". 
+#' @param type determines which value to return.  Options include: "first" (default), "most", and "last".
+#' @param data data frame to use. If omitted, the parent environment is assumed to contain the variables.
+#' @param returndate optional bolean to indicate whether or not to return the dates corresponding to the relevant value. Default to TRUE.
+#' @param dateformat optonal string to indicate format of date variables if they are not already date objects (e.g. "%Y-%m-%d") 
+#' @export
+## THIS FUNCTION ALLOWS THE USER TO GET THE VALUE OF VAR WHICH APPEARS FIRST, LAST, or MOST OFTEN.
+most <- function(x){ux <- unique(x); ux[which.max(tabulate(match(x,ux)))]}
+getselectvar <- function(id,var,date=date,type="first",data=data,returndate=TRUE,dateformat=dateformat){
+  if(missing(date) & type %in% c("first","last")) stop("Date variable must be supplied when type is first or last.")
+  ## get appropriate variables from data frame if provided
+  if(!missing(data)){
+    if(!missing(date)) dates <- get(deparse(substitute(date)),data)
+    ids <- get(deparse(substitute(id)),data)
+    vars <- get(deparse(substitute(var)),data)
+  }
+  if(!missing(dateformat)){
+    if(!missing(date)) dates <- as.Date(dates,dateformat)
+  }
+  if(type=="first"){
+    date1 <- unsplit(lapply(split(dates, ids), FUN=function(x) min(x)), ids)
+    keep1 <- data.frame(ids,vars,dates,stringsAsFactors = FALSE)[date1==dates,]
+    if(!returndate) keep1 <- keep1[,1:2]
+  }
+  if(type=="most"){
+    keep1 <- unsplit(lapply(split(vars, ids), FUN=function(x) most(x)), ids)
+    keep1 <- unique(data.frame(ids,keep1,stringsAsFactors = FALSE))
+  }
+  if(type=="last"){
+    date1 <- unsplit(lapply(split(dates, ids), FUN=function(x) max(x)), ids)
+    keep1 <- data.frame(ids,vars,dates,stringsAsFactors = FALSE)[date1==dates,]
+    if(!returndate) keep1 <- keep1[,1:2]
+  }
+  names(keep1)[1] <- deparse(substitute(id))
+  names(keep1)[2] <- paste(deparse(substitute(var)),type,"cmp",sep="_")
+  return(keep1)
+}

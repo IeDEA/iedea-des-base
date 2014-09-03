@@ -1,0 +1,21 @@
+<html>
+<head>
+<title>IeDEA Mapping</title>
+</head>
+<body>
+<%
+# Run or source some R code here
+# <h1>Data Summary</h1>
+%>
+
+<p>The IeDEA regions included in these maps are: <%=paste(region_labels1,collapse="; ")%>.  We produced 4 maps. The first map highlights the regions and marks the different centers:</p>
+<img src="map1.png" />
+<p>The second map highlights participating countries and marks the different centers by service population:</p>
+<img src="map2.png" />
+<p>The third map highlights participating countries and marks the different centers by site situation:</p>
+<img src="map3.png" />
+<p>The third map highlights participating countries and marks the different centers by level of care:</p>
+<img src="map4.png" />
+
+</body>
+</html>
